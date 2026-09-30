@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwater LARP Character Creator</title>
+<style>
+  :root {
+    --bg: #1a1410;
+    --panel: #2a2118;
+    --border: #5c4a32;
+    --gold: #c9a227;
+    --gold-dim: #8a7020;
+    --text: #e8dcc8;
+    --text-dim: #a89878;
+    --accent: #8b4513;
+    --success: #4a7c59;
+    --danger: #8b3a3a;
+    --input-bg: #1f1812;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  header {
+    text-align: center;
+    padding: 2rem 0 1.5rem;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-size: 2.2rem;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  header p {
+    color: var(--text-dim);
+    margin-top: 0.4rem;
+    font-size: 0.95rem;
+  }
+  .step-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  .step-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-dim);
+    transition: all 0.2s;
+  }
+  .step-dot.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #1a1410;
+  }
+  .step-dot.done {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .panel h2 {
+    color: var(--gold);
+    font-size: 1.35rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+  .panel h3 {
+    color: var(--gold-dim);
+    font-size: 1.05rem;
+    margin: 1rem 0 0.5rem;
+  }
+  .hint {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  input[type="text"], select, input[type="number"] {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  input[type="text"]:focus, select:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+  .option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .option-btn {
+    padding: 0.7rem 0.5rem;
+    background: var(--input-bg);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.95rem;
+    transition: all 0.15s;
+  }
+  .option-btn:hover {
+    border-color: var(--gold-dim);
+    background: #2f261c;
+  }
+  .option-btn.selected {
+    border-color: var(--gold);
+    background: #3a2e1a;
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .option-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .feat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .feat-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .feat-item:hover { border-color: var(--gold-dim); }
+  .feat-item.selected {
+    border-color: var(--gold);
+    background: #2f2818;
+  }
+  .feat-item.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .feat-item input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--gold);
+  }
+  .feat-item .feat-content { flex: 1; }
+  .feat-item .feat-name {
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 0.2rem;
+  }
+  .feat-item .feat-desc {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+  }
+  .feat-item .prereq {
+    font-size: 0.8rem;
+    color: #c97a4a;
+    margin-top: 0.25rem;
+  }
+  .feat-item .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+  .tag-combat { background: #5a3030; color: #f0a0a0; }
+  .tag-ritual { background: #2a4a3a; color: #a0d0b0; }
+  .tag-feat { background: #3a3a5a; color: #a0a0d0; }
+  .count-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.6rem 1rem;
+    background: var(--input-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .count-bar .count {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .count-bar .count.full { color: var(--success); }
+  .count-bar .count.over { color: var(--danger); }
+  .btn-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  button.primary, button.secondary, button.danger {
+    padding: 0.7rem 1.4rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  button.primary {
+    background: var(--gold);
+    color: #1a1410;
+  }
+  button.primary:hover { background: #d4b02e; }
+  button.primary:disabled {
+    background: #5a4a20;
+    color: #8a7a50;
+    cursor: not-allowed;
+  }
+  button.secondary {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text);
+  }
+  button.secondary:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+  .sheet {
+    background: #f5f0e6;
+    color: #1a1410;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-top: 1rem;
+  }
+  .sheet h2 {
+    color: #5c3a1a;
+    border-bottom: 2px solid #8b6914;
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+  }
+  .sheet h3 {
+    color: #6b4a20;
+    margin: 1.2rem 0 0.5rem;
+    font-size: 1.1rem;
+  }
+  .sheet .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .sheet .meta div { font-size: 0.95rem; }
+  .sheet .meta strong { color: #5c3a1a; }
+  .sheet ul { list-style: none; padding: 0; }
+  .sheet li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #d4c8b0;
+    font-size: 0.92rem;
+  }
+  .sheet li strong { color: #5c3a1a; }
+  .sheet .stats {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    padding: 0.8rem;
+    background: #ebe4d4;
+    border-radius: 6px;
+  }
+  .sheet .stat { text-align: center; }
+  .sheet .stat .num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #5c3a1a;
+  }
+  .sheet .stat .label {
+    font-size: 0.8rem;
+    color: #6b5a40;
+  }
+  .hidden { display: none !important; }
+  .path-choice {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .path-btn {
+    flex: 1;
+    padding: 1rem;
+    background: var(--input-bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .path-btn:hover { border-color: var(--gold-dim); }
+  .path-btn.selected {
+    border-color: var(--gold);
+    background: #3a2e1a;
+  }
+  .path-btn .path-title {
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 0.3rem;
+  }
+  .path-btn .path-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .summary-box {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+  .summary-box span {
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .armor-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .armor-option {
+    padding: 1rem;
+    background: var(--input-bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .armor-option:hover { border-color: var(--gold-dim); }
+  .armor-option.selected {
+    border-color: var(--gold);
+    background: #3a2e1a;
+  }
+  .armor-option.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .armor-option .ap {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .armor-option .name {
+    font-weight: 600;
+    margin: 0.3rem 0;
+  }
+  .armor-option .examples {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+  .ap-breakdown {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+  .ap-breakdown table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .ap-breakdown td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .ap-breakdown td:last-child {
+    text-align: right;
+    font-weight: 600;
+    color: var(--gold);
+  }
+  .ap-breakdown tr.total td {
+    border-bottom: none;
+    border-top: 2px solid var(--gold);
+    font-size: 1.1rem;
+    padding-top: 0.5rem;
+  }
+  .prep-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+  }
+  .prep-row .spell-info { flex: 1; }
+  .prep-row .spell-name {
+    font-weight: 600;
+    color: var(--gold);
+  }
+  .prep-row .spell-type {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .prep-row input[type="number"] {
+    width: 70px;
+    margin: 0;
+    text-align: center;
+  }
+  .prep-totals {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    background: var(--input-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .prep-totals .pt {
+    text-align: center;
+  }
+  .prep-totals .pt .num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .prep-totals .pt .lbl {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  @media print {
+    body { background: #fff; color: #000; }
+    .no-print { display: none !important; }
+    .sheet { background: #fff; border: 1px solid #000; }
+    .container { max-width: 100%; padding: 0; }
+  }
+  @media (max-width: 600px) {
+    .option-grid { grid-template-columns: repeat(2, 1fr); }
+    .sheet .meta { grid-template-columns: 1fr; }
+    .path-choice { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="no-print">
+    <h1>Blackwater LARP</h1>
+    <p>Character Creator</p>
+  </header>
+
+  <div class="step-indicator no-print" id="stepIndicator">
+    <div class="step-dot active" data-step="1">1</div>
+    <div class="step-dot" data-step="2">2</div>
+    <div class="step-dot" data-step="3">3</div>
+    <div class="step-dot" data-step="4">4</div>
+    <div class="step-dot" data-step="5">5</div>
+    <div class="step-dot" data-step="6">6</div>
+    <div class="step-dot" data-step="7">7</div>
+  </div>
+
+  <!-- STEP 1: Name & Race -->
+  <div class="panel no-print" id="step1">
+    <h2>Step 1 — Name & Race</h2>
+    <p class="hint">Race is purely for roleplay flair and how the world sees you. It has no mechanical effect.</p>
+    <label for="charName">Character Name</label>
+    <input type="text" id="charName" placeholder="Enter your character's name">
+    <label>Race</label>
+    <div class="option-grid" id="raceGrid"></div>
+    <div class="btn-row">
+      <button class="primary" id="toStep2" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Profession -->
+  <div class="panel no-print hidden" id="step2">
+    <h2>Step 2 — Background Profession</h2>
+    <p class="hint">Your profession is RP flair that helps you fit into the world, earn coin, and interact with other players. The economy is player-driven.</p>
+    <label>Profession</label>
+    <div class="option-grid" id="profGrid" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));"></div>
+    <div id="profDesc" class="summary-box hidden"></div>
+    <div class="btn-row">
+      <button class="secondary" id="backTo1">← Back</button>
+      <button class="primary" id="toStep3" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Class -->
+  <div class="panel no-print hidden" id="step3">
+    <h2>Step 3 — Class</h2>
+    <p class="hint">Everyone starts with 1 Life Point and chooses 4 feats/spells from their class list. Starting gear and gold differ by class.</p>
+    <div class="option-grid" id="classGrid" style="grid-template-columns: 1fr 1fr;"></div>
+    <div id="classDesc" class="summary-box hidden"></div>
+    <div class="btn-row">
+      <button class="secondary" id="backTo2">← Back</button>
+      <button class="primary" id="toStep4" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Feats / Spells -->
+  <div class="panel no-print hidden" id="step4">
+    <h2 id="step4Title">Step 4 — Feats & Spells</h2>
+    <p class="hint" id="step4Hint">Select exactly 4 feats/spells. Some have prerequisites. Combat spells can later be prepared into your 6 combat slots.</p>
+
+    <div id="pathSection" class="hidden">
+      <h3>Choose your Path</h3>
+      <div class="path-choice">
+        <div class="path-btn" data-path="grace">
+          <div class="path-title">Way of Grace</div>
+          <div class="path-desc">Healing, protection, resurrection, holy smite</div>
+        </div>
+        <div class="path-btn" data-path="doom">
+          <div class="path-title">Way of Doom</div>
+          <div class="path-desc">Damage, fear, unholy smite, executioner</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="count-bar" id="featCountBar">
+      <span>Selected: <span class="count" id="featCount">0</span> / 4</span>
+      <span id="featWarning" style="color:var(--danger);font-size:0.9rem;"></span>
+    </div>
+    <div class="feat-list" id="featList"></div>
+    <div class="btn-row">
+      <button class="secondary" id="backTo3">← Back</button>
+      <button class="primary" id="toStep5" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: Armor -->
+  <div class="panel no-print hidden" id="step5">
+    <h2>Step 5 — Armor</h2>
+    <p class="hint">Choose your starting armor. Armor does <strong>not</strong> stack — you get the points from the type you wear (torso must be ≥80% covered). Feat and spell bonuses stack on top.</p>
+
+    <div class="armor-card" id="armorOptions"></div>
+
+    <div class="ap-breakdown" id="apBreakdown">
+      <table>
+        <tr><td>Base from armor</td><td id="apBase">0</td></tr>
+        <tr><td>Feat / spell bonuses</td><td id="apBonus">0</td></tr>
+        <tr class="total"><td>Total Armor Points</td><td id="apTotal">0</td></tr>
+      </table>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.6rem;" id="apNotes"></p>
+    </div>
+
+    <div class="btn-row">
+      <button class="secondary" id="backTo4">← Back</button>
+      <button class="primary" id="toStep6">Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 6: Spell Preparation (casters) or Review -->
+  <div class="panel no-print hidden" id="step6">
+    <h2 id="step6Title">Step 6 — Combat Spell Preparation</h2>
+    <p class="hint" id="step6Hint">Casters may prepare up to <strong>6 combat spells</strong> per long rest (2 hours). Assign how many of each combat spell you prepare. Rituals and non-combat abilities are always available and do not use these slots.</p>
+
+    <div id="prepSection">
+      <div class="count-bar">
+        <span>Prepared: <span class="count" id="prepCount">0</span> / 6</span>
+        <span id="prepWarning" style="color:var(--danger);font-size:0.9rem;"></span>
+      </div>
+      <div id="prepList"></div>
+      <div class="prep-totals" id="prepTotals">
+        <div class="pt"><div class="num" id="totalOrbs">0</div><div class="lbl">Orbs needed</div></div>
+        <div class="pt"><div class="num" id="totalGrenades">0</div><div class="lbl">Grenades needed</div></div>
+        <div class="pt"><div class="num" id="totalPrepared">0</div><div class="lbl">Total prepared</div></div>
+      </div>
+      <p class="hint" style="margin-top:0.8rem;">You will be given orbs/grenades to match your prepared combat spells. A long rest is 2 hours — check in with a Warden.</p>
+    </div>
+
+    <div id="noCasterNote" class="hidden">
+      <div class="summary-box">
+        Your class is not a primary caster (or you selected no combat spells). You skip spell preparation. Rituals and non-combat feats work normally if you have them.
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="secondary" id="backTo5">← Back</button>
+      <button class="primary" id="toStep7">Review Character →</button>
+    </div>
+  </div>
+
+  <!-- STEP 7: Final Sheet -->
+  <div class="panel hidden" id="step7">
+    <div class="no-print" style="margin-bottom:1rem;">
+      <h2>Your Character Sheet</h2>
+      <p class="hint">Print this page or save as PDF. You can go back to edit anything.</p>
+      <div class="btn-row">
+        <button class="primary" onclick="window.print()">Print Sheet</button>
+        <button class="secondary" id="startOver">Start Over</button>
+        <button class="secondary" id="backTo6">← Edit</button>
+      </div>
+    </div>
+    <div class="sheet" id="characterSheet"></div>
+  </div>
+</div>
+
+<script>
+const RACES = ["Human", "Elf", "Half Elf", "Orc", "Half Orc", "Dwarf", "Tiefling", "Halfling"];
+
+const PROFESSIONS = {
+  "Alchemist": "Can make potions. Begin with an ingredient mixing vial and 3 potion vials. Mix crystal + herb, then empower with Arcane or Divine Empower spell, turn in to Game Warden.",
+  "Blacksmith": "With access to tools and a workshop you can repair steel armor.",
+  "Barrister": "Offer legal representation / counsel.",
+  "Bartender / Cook / Server / Busser": "Could find employment at a saloon or restaurant. (Bartenders need event coordinator approval.) With enough resources could open their own establishment.",
+  "Call Girl": "Find work at the Velvet Fang working for Loretta Hale. (NO REAL PROSTITUTION!)",
+  "Farmer": "Begin game with food to sell to General Goods Store, saloon or restaurant. With enough gold and resources could buy land to farm.",
+  "Gambler": "Begin the game with a set of gambling items (deck of cards, dice etc.). Set up street gambling games or be hired by the saloon.",
+  "Herbalist": "You know how to find ingredients for potions and spell material components. Twice a day (morning and afternoon) you may forage for ingredients (check in with Warden, return after 2 hours, roll 6d8).",
+  "Healer": "Can find work in the Infirmary. Starts with 3 bandages and ability to make bandages. Only healers in the Infirmary may treat mortally wounded players.",
+  "Leatherworker": "Begin play with leather working tools. Can repair appropriate armor (leather and hide armor).",
+  "Merchant": "Begin play with a trade contact outside of Blackwater to make deals with town stores. Work with gamerunner to establish rules.",
+  "Miner": "You know how to prospect for natural resources. Twice a day (morning and afternoon) you may prospect (check in with Warden, return after 2 hours, roll 6d8 for crystals).",
+  "Performer": "Musicians, poets, singers, dancers. Those that use their creative performative arts to make coin.",
+  "Scribe": "Can write magic scrolls. Begin with ink, pen/quill, and 3 blank parchments. Spiritualists & Spellslingers may only scribe spells they chose at creation. Warriors & Con Artists choose Divine or Arcane list and may scribe any from that list.",
+  "Tailor": "Begin play with sewing materials. Can repair clothing and cloth armor."
+};
+
+const ARMOR_TYPES = {
+  none:   { name: "No Armor", ap: 0, examples: "Clothing only" },
+  light:  { name: "Light Armor", ap: 1, examples: "Leather, padded, hide, thick cloth, gunman's duster, corset" },
+  medium:{ name: "Medium Armor", ap: 2, examples: "Chainmail, small metal scale (fish-scale)" },
+  heavy:  { name: "Heavy Armor", ap: 3, examples: "Steel brigandine, large steel scale (lamellar), breastplate" }
+};
+
+/* type: 'feat' | 'ritual' | 'combat'
+   resource: null | 'orb' | 'grenade' | 'none'
+   oncePerRest: boolean (for limited combat spells)
+*/
+const CLASSES = {
+  Warrior: {
+    desc: "Brawlers, gunfighters, duelists, weapon masters. Individuals that dedicate themselves to the mastery of combat and fighting.",
+    start: "One firearm + 12 BBs. Starting Gold: 10. Any approved LARP melee/thrown weapon, LARP Arrows, #35 lb bow. Can use Light, Medium, and Heavy Armor. Begin with non-magical equipment.",
+    baseArmor: ["none","light","medium","heavy"],
+    baseGold: 10, baseBBs: 12, baseFirearms: "1 firearm",
+    isCaster: false,
+    feats: [
+      { id: "way_gun", name: "Way of the Gun", desc: "You've dedicated yourself to the gun. Start with multiple firearms and 18 BBs instead of 12. Only ones allowed to use magic firearms.", prereq: null, type: "feat" },
+      { id: "reloader", name: "Reloader", desc: "When purchasing ammo, you receive two for the price of one.", prereq: "way_gun", type: "feat" },
+      { id: "way_fray", name: "Way of the Fray", desc: "You've dedicated yourself to mastering melee combat. Only ones allowed to use magic melee weapons.", prereq: null, type: "feat" },
+      { id: "deflection", name: "Deflection", desc: "While only wielding melee weapons, +1 Armor Point Deflection bonus.", prereq: "way_fray", type: "feat", armorBonus: 1, armorNote: "Deflection (+1 while melee only)" },
+      { id: "breach", name: "Breach", desc: "Spend 3 BBs to shoot the lock of a door/safe/lockbox etc. to unlock it.", prereq: null, type: "feat" },
+      { id: "tough", name: "Tough", desc: "1 additional Life Point. (May only be taken once.)", prereq: null, type: "feat", lifeBonus: 1 },
+      { id: "armor_master", name: "Armor Master", desc: "1 Additional Armor Point. (May only be taken once.)", prereq: null, type: "feat", armorBonus: 1, armorNote: "Armor Master (+1)" },
+      { id: "spell_interrupt", name: "Spell Interruption", desc: "If you can hit a spellcaster during their spell casting, the spell has no effect on you.", prereq: null, type: "feat" },
+      { id: "call_out", name: "Call Out (compulsion)", desc: "During combat shout \"MY NAME IS _____, AND I'M CALLING EVERYONE OUT!\" All enemies that can see and hear you must focus attacks on you. Ends if they are attacked by another player.", prereq: null, type: "feat" },
+      { id: "mental_grit", name: "Mental Grit", desc: "Immune to charm/compulsion feats/spells/spell effects. You can willingly ignore this feat.", prereq: null, type: "feat" }
+    ]
+  },
+  "Con Artist": {
+    desc: "Grifters, Gamblers, Snake oil salesmen. Individuals that get ahead in the world with their wits and subterfuge.",
+    start: "One firearm + 6 BBs. Starting Gold: 15. Any approved LARP melee/thrown weapons, LARP Arrows, #35 bow. May use Light Armor. Begin with non-magical equipment.",
+    baseArmor: ["none","light"],
+    baseGold: 15, baseBBs: 6, baseFirearms: "1 firearm",
+    isCaster: false,
+    feats: [
+      { id: "master_lock", name: "Master Locksmith", desc: "Picklock locked doors, safes, strongboxes etc. to unlock them.", prereq: null, type: "feat" },
+      { id: "midas", name: "Midas Touched", desc: "Start game with 10 extra gold.", prereq: null, type: "feat", goldBonus: 10 },
+      { id: "gambler", name: "Gambler", desc: "Gain access to a low interest line of credit from the house when gambling. Without this feat the house can set any interest rate.", prereq: null, type: "feat" },
+      { id: "lady_luck", name: "Lady Luck", desc: "If you bust in a game, recover 25% of money lost. (e.g. lose 20 gold → get 5 back.)", prereq: null, type: "feat" },
+      { id: "nimble", name: "Nimble", desc: "+1 dodge bonus to Life Points. (May only be taken once.)", prereq: null, type: "feat", dodgeBonus: 1 },
+      { id: "sweet_talker", name: "Sweet Talker (charm)", desc: "If you screw up in RP and rub someone the wrong way, use this to be forgiven. Once per player/NPC per event.", prereq: null, type: "feat" },
+      { id: "med_armor_ca", name: "Medium Armor", desc: "Allowed to wear medium armor.", prereq: null, type: "feat", unlockArmor: "medium" },
+      { id: "street_smarts", name: "Street Smarts", desc: "If stumped on a quest or plot line, ask the Player or NPC for a hint. Once per day.", prereq: null, type: "feat" },
+      { id: "silver_tongue", name: "Silver-tongued (Charm)", desc: "Convince a player to be your follower for an hour. Up to two followers. Once per player per event. Cannot command outrageous acts.", prereq: null, type: "feat" },
+      { id: "slippery", name: "Slippery Mind", desc: "Immune to charm/compulsion spells/feats/spell effects. You can willingly ignore this feat.", prereq: null, type: "feat" },
+      { id: "pickpocket", name: "Pickpocket", desc: "Every day receive 4 Pickpocket cards. Choose a Mark, RP with them, give the card, roll 1d6. On success Mark reveals pouch contents and you choose 1 item or 2 dollar bills (crit: better haul). Mark tears card after.", prereq: null, type: "feat" }
+    ]
+  },
+  Spiritualist: {
+    desc: "Priests, Missionaries, Shamans, Medicine Men, Doomsday Preachers. Individuals touched by the other side.",
+    start: "One firearm + 6 BBs. Starting Gold: 10. Holy symbol counts as material components (if lost, need physical components). Any approved LARP melee, LARP Arrows, #35 bow. Can use Light and Medium Armor. Begin with non-magical equipment. Orbs/grenades for combat spells. Some spells are rituals (unlimited); some are 1/long rest.",
+    baseArmor: ["none","light","medium"],
+    baseGold: 10, baseBBs: 6, baseFirearms: "1 firearm",
+    isCaster: true,
+    pathRequired: true,
+    general: [
+      { id: "warpriest", name: "Warpriest (feat)", desc: "Allowed to wear heavy armor.", prereq: null, type: "feat", unlockArmor: "heavy" },
+      { id: "evilangelist", name: "Evilangelist (Feat, compulsion)", desc: "Deliver a fiery sermon twice a day (morning & afternoon). Those who hear it are compelled to give you 1 gold coin. Once per Player/NPC per event.", prereq: null, type: "feat" },
+      { id: "empower_sp", name: "Empower Scrolls and Potions (spell, ritual)", desc: "Imbue divine magical power into scrolls and potions. (e.g. an Alchemist can have you empower a health potion.)", prereq: null, type: "ritual" },
+      { id: "guidance", name: "Guidance (spell, ritual)", desc: "If stumped on a quest/plot, perform ritual and ask the player/NPC who gave it for a hint. Once per event per player/NPC.", prereq: null, type: "ritual" },
+      { id: "steadfast", name: "Steadfast Faith", desc: "Immune to charm/compulsion spells/feats/spell effects. You can willingly ignore this feat.", prereq: null, type: "feat" },
+      { id: "protection", name: "Protection (spell, self, ritual, potion)", desc: "+1 bonus Armor Point, stacks with armor. May only cast on yourself once; does not stack with itself.", prereq: null, type: "ritual", armorBonus: 1, armorNote: "Protection (+1 self, once)" }
+    ],
+    grace: [
+      { id: "divine_health", name: "Divine Health (Spell, self, ritual, potion)", desc: "+1 bonus to Life Point total. May only cast on yourself once; does not stack.", prereq: null, type: "ritual", lifeBonus: 1 },
+      { id: "life_giver", name: "Life Giver (Spell, touch, potion)", desc: "Cures 1 Life Point, stabilizes a mortally wounded player instead of bandaging them.", prereq: null, type: "ritual" },
+      { id: "holy_smite", name: "Holy Smite (spell)", desc: "Explosion of divine magic (holy, unholy, radiant, necrotic etc.). Throw an airsoft grenade!", prereq: null, type: "combat", resource: "grenade" },
+      { id: "resurrect", name: "Resurrect (Spell, ritual)", desc: "Resurrect a dead player. Players may only be resurrected once.", prereq: null, type: "ritual" }
+    ],
+    doom: [
+      { id: "annihilate", name: "Annihilate (Spell, combat, range, touch, potion)", desc: "Inflict 1 damage to target. Touch or hit with an Orb.", prereq: null, type: "combat", resource: "orb" },
+      { id: "unholy_smite", name: "Unholy Smite (spell)", desc: "Explosion of unholy divine magic. Throw an airsoft grenade!", prereq: null, type: "combat", resource: "grenade" },
+      { id: "fear", name: "Fear (spell, combat, compulsion, thrown orb)", desc: "Cause one enemy to flee. Hit them with an orb as the somatic component.", prereq: null, type: "combat", resource: "orb" },
+      { id: "executioner", name: "Executioner (Spell, touch)", desc: "Cursed touch makes a dead player unable to be resurrected.", prereq: null, type: "ritual" }
+    ]
+  },
+  Spellslinger: {
+    desc: "Sorcerers, Wizards, Hexslingers, Witches. Individuals that study or have innate arcane powers.",
+    start: "One firearm + 6 BBs. Starting Gold: 10. Wand or staff counts as material components (if lost, need physical components). Any approved LARP melee, LARP Arrows, #35 bow. Can use Light armor. Begin with non-magical equipment. Mixture of 5 orbs or grenades for combat spells. Some spells rituals (unlimited); some 1/long rest.",
+    baseArmor: ["none","light"],
+    baseGold: 10, baseBBs: 6, baseFirearms: "1 firearm",
+    isCaster: true,
+    feats: [
+      { id: "mage_armor", name: "Mage Armor (spell, self, ritual)", desc: "+1 Armor Point. Stacks with armor. Lasts all day until destroyed. Does not stack with itself.", prereq: null, type: "ritual", armorBonus: 1, armorNote: "Mage Armor (+1, all day)" },
+      { id: "resolute", name: "Resolute Will (Feat)", desc: "Immune to charm/compulsion spells/feats/spell effects. You can willingly ignore this feat.", prereq: null, type: "feat" },
+      { id: "arcane_strike", name: "Arcane Strike (Spell, Combat, orb)", desc: "Throw orb, hit player and inflict 1 point of damage.", prereq: null, type: "combat", resource: "orb" },
+      { id: "arcane_blast", name: "Arcane Blast (combat, spell, requires Airsoft Grenade)", desc: "Explosion of Arcane Magic (fireball, lightning, acid etc.). Throw an airsoft grenade!", prereq: null, type: "combat", resource: "grenade" },
+      { id: "identify", name: "Identify (spell, ritual)", desc: "Identify magic item properties.", prereq: null, type: "ritual" },
+      { id: "freeze", name: "Freeze (combat, spell, requires orb)", desc: "Yell FREEZE and hit target with arcane orb. They can't move for 1 minute. Any damage, touch, or aggressive action ends it.", prereq: null, type: "combat", resource: "orb" },
+      { id: "empower_ss", name: "Empower Scrolls and Potions (spell, ritual)", desc: "Imbue arcane magical power into arcane scrolls and potions.", prereq: null, type: "ritual" },
+      { id: "med_armor_ss", name: "Medium Armor (feat)", desc: "Allowed to use medium armor.", prereq: null, type: "feat", unlockArmor: "medium" },
+      { id: "misdirection", name: "Misdirection (spell, combat, compulsion, once per long rest)", desc: "Yell \"1, 2, 3, DON'T ATTACK ME!\" All enemies who hear must cease attacking you for 1 minute. Ends if you take aggressive action. Once per long rest.", prereq: null, type: "combat", resource: "none", oncePerRest: true },
+      { id: "summon_staff", name: "Summon Staff or Wand (spell, ritual)", desc: "If your staff or wand is lost or stolen, summon a new one.", prereq: null, type: "ritual" },
+      { id: "death_blossom", name: "Death Blossom (Spell, Instant, combat, once per long rest)", desc: "If you fall mortally wounded you may cast this, creating an Arcane Blast (drop an Airsoft Grenade).", prereq: null, type: "combat", resource: "grenade", oncePerRest: true }
+    ]
+  }
+};
+
+// State
+const state = {
+  name: "",
+  race: null,
+  profession: null,
+  class: null,
+  path: null,
+  selectedFeats: [],
+  armor: "none",
+  prepared: {} // { featId: count }
+};
+
+let currentStep = 1;
+
+function $(id) { return document.getElementById(id); }
+function show(id) { $(id).classList.remove("hidden"); }
+function hide(id) { $(id).classList.add("hidden"); }
+
+function updateStepDots() {
+  document.querySelectorAll(".step-dot").forEach(dot => {
+    const s = parseInt(dot.dataset.step);
+    dot.classList.remove("active", "done");
+    if (s === currentStep) dot.classList.add("active");
+    else if (s < currentStep) dot.classList.add("done");
+  });
+}
+
+function goTo(step) {
+  for (let i = 1; i <= 7; i++) hide("step" + i);
+  show("step" + step);
+  currentStep = step;
+  updateStepDots();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function getAvailableFeats() {
+  const cls = CLASSES[state.class];
+  if (!cls) return [];
+  if (state.class === "Spiritualist") {
+    if (!state.path) return [];
+    return [...cls.general, ...cls[state.path]];
+  }
+  return cls.feats;
+}
+
+function getSelectedFeatObjects() {
+  return getAvailableFeats().filter(f => state.selectedFeats.includes(f.id));
+}
+
+function getAllowedArmor() {
+  const cls = CLASSES[state.class];
+  if (!cls) return ["none"];
+  const allowed = new Set(cls.baseArmor);
+  getSelectedFeatObjects().forEach(f => {
+    if (f.unlockArmor) allowed.add(f.unlockArmor);
+  });
+  return Array.from(allowed);
+}
+
+function calcArmorPoints() {
+  const base = ARMOR_TYPES[state.armor]?.ap || 0;
+  let bonus = 0;
+  const notes = [];
+  getSelectedFeatObjects().forEach(f => {
+    if (f.armorBonus) {
+      bonus += f.armorBonus;
+      if (f.armorNote) notes.push(f.armorNote);
+    }
+  });
+  return { base, bonus, total: base + bonus, notes };
+}
+
+function calcLife() {
+  let life = 1;
+  let dodge = 0;
+  getSelectedFeatObjects().forEach(f => {
+    if (f.lifeBonus) life += f.lifeBonus;
+    if (f.dodgeBonus) dodge += f.dodgeBonus;
+  });
+  return { life, dodge };
+}
+
+function calcGoldBBs() {
+  const cls = CLASSES[state.class];
+  let gold = cls.baseGold;
+  let bbs = cls.baseBBs;
+  let firearms = cls.baseFirearms;
+  getSelectedFeatObjects().forEach(f => {
+    if (f.goldBonus) gold += f.goldBonus;
+    if (f.id === "way_gun") { bbs = 18; firearms = "Multiple firearms"; }
+  });
+  return { gold, bbs, firearms };
+}
+
+function getCombatSpellsKnown() {
+  return getSelectedFeatObjects().filter(f => f.type === "combat");
+}
+
+// ===== STEP 1 =====
+function initRaces() {
+  const grid = $("raceGrid");
+  RACES.forEach(r => {
+    const btn = document.createElement("div");
+    btn.className = "option-btn";
+    btn.textContent = r;
+    btn.onclick = () => {
+      document.querySelectorAll("#raceGrid .option-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      state.race = r;
+      $("toStep2").disabled = !state.name.trim() || !state.race;
+    };
+    grid.appendChild(btn);
+  });
+  $("charName").oninput = () => {
+    state.name = $("charName").value.trim();
+    $("toStep2").disabled = !state.name || !state.race;
+  };
+}
+$("toStep2").onclick = () => goTo(2);
+$("backTo1").onclick = () => goTo(1);
+
+// ===== STEP 2 =====
+function initProfs() {
+  const grid = $("profGrid");
+  Object.keys(PROFESSIONS).forEach(p => {
+    const btn = document.createElement("div");
+    btn.className = "option-btn";
+    btn.textContent = p;
+    btn.onclick = () => {
+      document.querySelectorAll("#profGrid .option-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      state.profession = p;
+      const desc = $("profDesc");
+      desc.classList.remove("hidden");
+      desc.innerHTML = `<strong>${p}</strong><br>${PROFESSIONS[p]}`;
+      $("toStep3").disabled = false;
+    };
+    grid.appendChild(btn);
+  });
+}
+$("toStep3").onclick = () => goTo(3);
+$("backTo2").onclick = () => goTo(2);
+
+// ===== STEP 3 =====
+function initClasses() {
+  const grid = $("classGrid");
+  Object.keys(CLASSES).forEach(c => {
+    const btn = document.createElement("div");
+    btn.className = "option-btn";
+    btn.style.padding = "1rem";
+    btn.innerHTML = `<strong>${c}</strong>`;
+    btn.onclick = () => {
+      document.querySelectorAll("#classGrid .option-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      state.class = c;
+      state.path = null;
+      state.selectedFeats = [];
+      state.armor = "none";
+      state.prepared = {};
+      const desc = $("classDesc");
+      desc.classList.remove("hidden");
+      desc.innerHTML = `<strong>${c}</strong><br>${CLASSES[c].desc}<br><br><em>${CLASSES[c].start}</em>`;
+      $("toStep4").disabled = false;
+    };
+    grid.appendChild(btn);
+  });
+}
+$("toStep4").onclick = () => {
+  prepareFeatStep();
+  goTo(4);
+};
+$("backTo3").onclick = () => goTo(3);
+
+// ===== STEP 4: Feats =====
+function prepareFeatStep() {
+  const cls = CLASSES[state.class];
+  $("step4Title").textContent = state.class === "Spiritualist"
+    ? "Step 4 — Path & Spells/Feats"
+    : "Step 4 — Feats & Spells";
+
+  if (cls.pathRequired) {
+    show("pathSection");
+    document.querySelectorAll(".path-btn").forEach(b => {
+      b.classList.toggle("selected", b.dataset.path === state.path);
+    });
+  } else {
+    hide("pathSection");
+  }
+  renderFeats();
+}
+
+document.querySelectorAll(".path-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".path-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    state.path = btn.dataset.path;
+    state.selectedFeats = [];
+    state.prepared = {};
+    renderFeats();
+  };
+});
+
+function typeTag(type) {
+  if (type === "combat") return '<span class="tag tag-combat">Combat</span>';
+  if (type === "ritual") return '<span class="tag tag-ritual">Ritual</span>';
+  return '<span class="tag tag-feat">Feat</span>';
+}
+
+function renderFeats() {
+  const list = $("featList");
+  list.innerHTML = "";
+  const feats = getAvailableFeats();
+
+  if (state.class === "Spiritualist" && !state.path) {
+    list.innerHTML = `<p class="hint">Choose Way of Grace or Way of Doom above to see available spells and feats.</p>`;
+    updateFeatCount();
+    return;
+  }
+
+  feats.forEach(f => {
+    const item = document.createElement("div");
+    item.className = "feat-item";
+    const checked = state.selectedFeats.includes(f.id);
+    const prereqMet = !f.prereq || state.selectedFeats.includes(f.prereq);
+    const atLimit = state.selectedFeats.length >= 4 && !checked;
+
+    if (!prereqMet || atLimit) item.classList.add("disabled");
+    if (checked) item.classList.add("selected");
+
+    item.innerHTML = `
+      <input type="checkbox" ${checked ? "checked" : ""} ${(!prereqMet || atLimit) && !checked ? "disabled" : ""}>
+      <div class="feat-content">
+        <div class="feat-name">${f.name} ${typeTag(f.type)}</div>
+        <div class="feat-desc">${f.desc}</div>
+        ${f.prereq ? `<div class="prereq">Requires: ${feats.find(x => x.id === f.prereq)?.name || f.prereq}</div>` : ""}
+      </div>
+    `;
+
+    item.onclick = (e) => {
+      if (e.target.tagName === "INPUT") return;
+      toggleFeat(f);
+    };
+    item.querySelector("input").onchange = () => toggleFeat(f);
+    list.appendChild(item);
+  });
+  updateFeatCount();
+}
+
+function toggleFeat(f) {
+  const idx = state.selectedFeats.indexOf(f.id);
+  if (idx >= 0) {
+    state.selectedFeats = state.selectedFeats.filter(id => {
+      if (id === f.id) return false;
+      const dep = getAvailableFeats().find(x => x.id === id);
+      return !dep || dep.prereq !== f.id;
+    });
+    delete state.prepared[f.id];
+  } else {
+    if (state.selectedFeats.length >= 4) return;
+    if (f.prereq && !state.selectedFeats.includes(f.prereq)) return;
+    state.selectedFeats.push(f.id);
+  }
+  renderFeats();
+}
+
+function updateFeatCount() {
+  const n = state.selectedFeats.length;
+  const el = $("featCount");
+  el.textContent = n;
+  el.className = "count" + (n === 4 ? " full" : n > 4 ? " over" : "");
+  $("featWarning").textContent = n > 4 ? "Too many!" : "";
+  $("toStep5").disabled = n !== 4 || (CLASSES[state.class].pathRequired && !state.path);
+}
+
+$("toStep5").onclick = () => {
+  // Ensure armor is still valid
+  const allowed = getAllowedArmor();
+  if (!allowed.includes(state.armor)) state.armor = allowed[0] || "none";
+  renderArmor();
+  goTo(5);
+};
+$("backTo4").onclick = () => {
+  prepareFeatStep();
+  goTo(4);
+};
+
+// ===== STEP 5: Armor =====
+function renderArmor() {
+  const allowed = getAllowedArmor();
+  const grid = $("armorOptions");
+  grid.innerHTML = "";
+
+  ["none","light","medium","heavy"].forEach(key => {
+    const a = ARMOR_TYPES[key];
+    const opt = document.createElement("div");
+    opt.className = "armor-option";
+    if (!allowed.includes(key)) opt.classList.add("disabled");
+    if (state.armor === key) opt.classList.add("selected");
+    opt.innerHTML = `
+      <div class="ap">${a.ap} AP</div>
+      <div class="name">${a.name}</div>
+      <div class="examples">${a.examples}</div>
+    `;
+    if (allowed.includes(key)) {
+      opt.onclick = () => {
+        state.armor = key;
+        renderArmor();
+      };
+    }
+    grid.appendChild(opt);
+  });
+
+  const { base, bonus, total, notes } = calcArmorPoints();
+  $("apBase").textContent = base;
+  $("apBonus").textContent = bonus > 0 ? `+${bonus}` : "0";
+  $("apTotal").textContent = total;
+  $("apNotes").textContent = notes.length
+    ? "Bonuses: " + notes.join("; ") + ". Note: Deflection only applies while wielding melee only."
+    : "No feat/spell armor bonuses selected. Rune bonuses (+1/+2/+3) can be added later in play.";
+}
+
+$("toStep6").onclick = () => {
+  renderPrep();
+  goTo(6);
+};
+$("backTo5").onclick = () => {
+  renderArmor();
+  goTo(5);
+};
+
+// ===== STEP 6: Spell Prep =====
+function renderPrep() {
+  const combat = getCombatSpellsKnown();
+  const isCaster = CLASSES[state.class].isCaster;
+
+  if (!isCaster || combat.length === 0) {
+    hide("prepSection");
+    show("noCasterNote");
+    $("step6Title").textContent = "Step 6 — Spell Preparation";
+    $("step6Hint").textContent = "Non-casters or characters with no combat spells skip this step.";
+    return;
+  }
+
+  show("prepSection");
+  hide("noCasterNote");
+  $("step6Title").textContent = "Step 6 — Combat Spell Preparation";
+  $("step6Hint").innerHTML = `Casters may prepare up to <strong>6 combat spells</strong> per long rest (2 hours). Assign how many of each combat spell you prepare. Rituals and non-combat abilities are always available and do not use these slots.`;
+
+  const list = $("prepList");
+  list.innerHTML = "";
+
+  combat.forEach(f => {
+    if (state.prepared[f.id] === undefined) state.prepared[f.id] = 0;
+    const row = document.createElement("div");
+    row.className = "prep-row";
+    const resLabel = f.resource === "orb" ? "Orb" : f.resource === "grenade" ? "Grenade" : "No prop";
+    const onceNote = f.oncePerRest ? " (max 1 / long rest)" : "";
+    row.innerHTML = `
+      <div class="spell-info">
+        <div class="spell-name">${f.name}</div>
+        <div class="spell-type">${resLabel}${onceNote}</div>
+      </div>
+      <input type="number" min="0" max="${f.oncePerRest ? 1 : 6}" value="${state.prepared[f.id]}" data-id="${f.id}">
+    `;
+    const input = row.querySelector("input");
+    input.onchange = () => {
+      let v = parseInt(input.value) || 0;
+      if (f.oncePerRest) v = Math.min(v, 1);
+      v = Math.max(0, Math.min(6, v));
+      input.value = v;
+      state.prepared[f.id] = v;
+      // Cap total at 6
+      let total = Object.values(state.prepared).reduce((a,b) => a+b, 0);
+      if (total > 6) {
+        const excess = total - 6;
+        state.prepared[f.id] = Math.max(0, v - excess);
+        input.value = state.prepared[f.id];
+      }
+      updatePrepTotals();
+    };
+    list.appendChild(row);
+  });
+  updatePrepTotals();
+}
+
+function updatePrepTotals() {
+  const combat = getCombatSpellsKnown();
+  let orbs = 0, grenades = 0, total = 0;
+  combat.forEach(f => {
+    const n = state.prepared[f.id] || 0;
+    total += n;
+    if (f.resource === "orb") orbs += n;
+    if (f.resource === "grenade") grenades += n;
+  });
+  $("totalOrbs").textContent = orbs;
+  $("totalGrenades").textContent = grenades;
+  $("totalPrepared").textContent = total;
+  $("prepCount").textContent = total;
+  $("prepCount").className = "count" + (total === 6 ? " full" : total > 6 ? " over" : "");
+  $("prepWarning").textContent = total > 6 ? "Over limit!" : "";
+}
+
+$("toStep7").onclick = () => {
+  buildSheet();
+  goTo(7);
+};
+$("backTo6").onclick = () => goTo(6);
+
+// ===== STEP 7: Sheet =====
+function buildSheet() {
+  const cls = CLASSES[state.class];
+  const feats = getSelectedFeatObjects();
+  const { life, dodge } = calcLife();
+  const { gold, bbs, firearms } = calcGoldBBs();
+  const { base, bonus, total: apTotal, notes } = calcArmorPoints();
+  const combat = getCombatSpellsKnown();
+  const preparedList = combat.filter(f => (state.prepared[f.id] || 0) > 0);
+  let orbs = 0, grenades = 0, prepTotal = 0;
+  preparedList.forEach(f => {
+    const n = state.prepared[f.id];
+    prepTotal += n;
+    if (f.resource === "orb") orbs += n;
+    if (f.resource === "grenade") grenades += n;
+  });
+
+  const armorName = ARMOR_TYPES[state.armor].name;
+  const allowed = getAllowedArmor().map(k => ARMOR_TYPES[k].name).join(", ");
+
+  const sheet = `
+    <h2>${state.name}</h2>
+    <div class="meta">
+      <div><strong>Race:</strong> ${state.race}</div>
+      <div><strong>Class:</strong> ${state.class}${state.path ? " (Way of " + (state.path === "grace" ? "Grace" : "Doom") + ")" : ""}</div>
+      <div><strong>Profession:</strong> ${state.profession}</div>
+      <div><strong>Starting Gold:</strong> ${gold} Gold Coins</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">${life}</div><div class="label">Life Points</div></div>
+      ${dodge ? `<div class="stat"><div class="num">+${dodge}</div><div class="label">Dodge Bonus</div></div>` : ""}
+      <div class="stat"><div class="num">${apTotal}</div><div class="label">Armor Points</div></div>
+      <div class="stat"><div class="num">${life + apTotal}${dodge ? ` (+${dodge} dodge)` : ""}</div><div class="label">Hit Points</div></div>
+      <div class="stat"><div class="num">${bbs}</div><div class="label">Starting BBs</div></div>
+      <div class="stat"><div class="num">${gold}</div><div class="label">Gold</div></div>
+    </div>
+
+    <h3>Armor</h3>
+    <p style="font-size:0.92rem;">
+      <strong>Worn:</strong> ${armorName} (${base} AP)<br>
+      ${bonus ? `<strong>Bonuses:</strong> +${bonus} AP (${notes.join("; ")})<br>` : ""}
+      <strong>Total Armor Points:</strong> ${apTotal}<br>
+      <strong>Armor Allowed:</strong> ${allowed}<br>
+      <em>Torso must be ≥80% covered to receive armor points. Armor does not stack with other armor types. Runes (+1/+2/+3) can be infused later.</em>
+    </p>
+
+    <h3>Starting Gear</h3>
+    <p style="font-size:0.92rem;">
+      <strong>Firearms:</strong> ${firearms}<br>
+      <strong>BBs:</strong> ${bbs}<br>
+      ${cls.start}
+    </p>
+
+    <h3>Selected Feats / Spells (4)</h3>
+    <ul>
+      ${feats.map(f => `<li><strong>${f.name}</strong> <em>(${f.type})</em> — ${f.desc}</li>`).join("")}
+    </ul>
+
+    ${cls.isCaster ? `
+    <h3>Combat Spell Preparation (per Long Rest)</h3>
+    <p style="font-size:0.9rem;">Maximum 6 prepared combat spells. Long rest = 2 hours (check in with Warden).</p>
+    ${preparedList.length ? `
+      <ul>
+        ${preparedList.map(f => {
+          const n = state.prepared[f.id];
+          const res = f.resource === "orb" ? "orb" : f.resource === "grenade" ? "grenade" : "no prop";
+          return `<li><strong>${n}× ${f.name}</strong> (${res}${f.oncePerRest ? ", once per long rest" : ""})</li>`;
+        }).join("")}
+      </ul>
+      <p style="font-size:0.92rem;"><strong>Props needed:</strong> ${orbs} Orb${orbs !== 1 ? "s" : ""}, ${grenades} Grenade${grenades !== 1 ? "s" : ""} (Total prepared: ${prepTotal}/6)</p>
+    ` : `<p style="font-size:0.92rem;">No combat spells prepared (or none known). Rituals still work.</p>`}
+    <p style="font-size:0.85rem;color:#6b5a40;">Rituals and non-combat abilities do not use combat slots and can be used according to their own limits.</p>
+    ` : ""}
+
+    <h3>Profession</h3>
+    <p style="font-size:0.92rem;">${PROFESSIONS[state.profession]}</p>
+
+    <h3>Core Rules Reminder</h3>
+    <ul style="font-size:0.88rem;">
+      <li><strong>Hit Points</strong> = Life Points + Armor Points. Damage hits Armor first, then Life.</li>
+      <li><strong>All weapons</strong> deal 1 damage (magical melee/bows deal 2). Each BB = 1 damage. Headshots count.</li>
+      <li><strong>At 0 HP:</strong> Mortally wounded — stabilize within 3 minutes or die. Proper bandage (3 wraps) or Life Giver. Then infirmary (15 min per Life Point).</li>
+      <li><strong>Three Strike Rule:</strong> Third time mortally wounded = permanent death (unless resurrected once).</li>
+      <li><strong>Combat Magic:</strong> Up to 6 prepared combat spells per long rest. Orbs = 1 dmg, Grenades = 3 dmg area (5-ft rule if dud = 2 dmg).</li>
+      <li><strong>Spells</strong> require Verbal + Somatic + Material. Do not pick up BBs from the ground.</li>
+      <li><strong>Armor repair:</strong> 30 min work per 1 AP by appropriate craftsman.</li>
+    </ul>
+  `;
+  $("characterSheet").innerHTML = sheet;
+}
+
+$("startOver").onclick = () => {
+  state.name = "";
+  state.race = null;
+  state.profession = null;
+  state.class = null;
+  state.path = null;
+  state.selectedFeats = [];
+  state.armor = "none";
+  state.prepared = {};
+  $("charName").value = "";
+  document.querySelectorAll(".option-btn.selected").forEach(b => b.classList.remove("selected"));
+  document.querySelectorAll(".path-btn.selected").forEach(b => b.classList.remove("selected"));
+  hide("profDesc");
+  hide("classDesc");
+  $("toStep2").disabled = true;
+  $("toStep3").disabled = true;
+  $("toStep4").disabled = true;
+  goTo(1);
+};
+
+// Init
+initRaces();
+initProfs();
+initClasses();
+updateStepDots();
+</script>
+</body>
+</html>
